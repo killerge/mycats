@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>七貓健康管家</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluent/180/000000/cat.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --white-cat: #ffffff; --blue-cat: #78909c; --boy: #2196f3; --girl: #e91e63; --accent: #37474f; }
+        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 10px; padding-bottom: 80px; }
+        .nav { display: flex; background: #fff; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 1000; overflow: hidden; }
+        .nav-item { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #78909c; font-weight: bold; font-size: 13px; }
+        .nav-item.active { background: var(--accent); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h3 { margin: 0 0 10px 0; font-size: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cfd8dc; border-radius: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
+        .weight-input { background: #e1f5fe !important; font-weight: bold; color: #01579b; }
+        .btn { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: bold; }
+        
+        /* 貓咪方格：區分白貓與藍貓 */
+        .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .cat-card { padding: 12px; border-radius: 12px; text-align: center; position: relative; border: 2px solid transparent; }
+        .is-white { background: #fff; border-color: #eee; color: #333; }
+        .is-blue { background: #546e7a; border-color: #37474f; color: #fff; }
+        .gender-dot { position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; }
+        .dot-M { background: var(--boy); }
+        .dot-F { background: var(--girl); }
+        .alert { color: #ff5252; font-weight: bold; font-size: 11px; margin-top: 5px; background: rgba(255,255,255,0.9); border-radius: 4px; padding: 2px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 8px 4px; border-bottom: 1px solid #eee; text-align: left; }
+        .price { color: #2e7d32; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <div class="nav-item active" onclick="switchTab('w-tab')">⚖️ 體重</div>
+    <div class="nav-item" onclick="switchTab('m-tab')">💊 用藥</div>
+    <div class="nav-item" onclick="switchTab('f-tab')">🍴 支出</div>
+    <div class="nav-item" onclick="switchTab('d-tab')">💾 備份</div>
+</div>
+
+<div id="w-tab" class="tab-content active">
+    <div class="card">
+        <h3>測量體重</h3>
+        <select id="w-name"></select>
+        <input type="date" id="w-date">
+        <input type="number" step="0.01" id="w-val" class="weight-input" placeholder="kg">
+        <button class="btn" onclick="saveW()">紀錄體重</button>
+    </div>
+    <div class="card"><h3>最近 10 次趨勢</h3><canvas id="wChart"></canvas></div>
+    <div class="card"><h3>七貓現況</h3><div id="status-grid" class="cat-grid"></div></div>
+</div>
+
+<div id="m-tab" class="tab-content">
+    <div class="card">
+        <h3>用藥紀錄</h3>
+        <select id="m-name-sel"></select>
+        <input type="date" id="m-date">
+        <input type="text" id="m-val" placeholder="藥名 (如: 全能貓S)">
+        <button class="btn" onclick="saveM()">紀錄用藥</button>
+    </div>
+    <div class="card"><h3>用藥歷史</h3><div id="m-list"></div></div>
+</div>
+
+<div id="f-tab" class="tab-content">
+    <div class="card">
+        <h3>飼料支出</h3>
+        <input type="date" id="f-date">
+        <input type="text" id="f-item" placeholder="品項">
+        <input type="number" id="f-cost" placeholder="金額">
+        <button class="btn" onclick="saveF()">紀錄支出</button>
+    </div>
+    <div class="card"><h3>收支統計</h3><div id="f-stats"></div></div>
+</div>
+
+<div id="d-tab" class="tab-content">
+    <div class="card">
+        <h3>數據備份</h3>
+        <p style="font-size:12px; color:red;">* 換手機或資料不見時，貼上備份文字即可恢復。</p>
+        <button class="btn" onclick="exportData()" style="background:#4caf50;">📋 點我複製備份</button>
+        <textarea id="import-area" style="width:100%; height:60px; margin-top:10px;" placeholder="在此貼上備份文字..."></textarea>
+        <button class="btn" onclick="importData()" style="background:#ffa000; margin-top:5px;">💾 恢復資料</button>
+    </div>
+</div>
+
+<script>
+    const cats = [
+        {name:"滿滿", color:"white", gender:"M"}, {name:"尖尖", color:"white", gender:"F"}, {name:"阿兩", color:"white", gender:"M"},
+        {name:"牛牛", color:"blue", gender:"F"}, {name:"熊熊", color:"blue", gender:"M"}, {name:"歪歪", color:"blue", gender:"M"}, {name:"發發", color:"blue", gender:"F"}
+    ];
+    let dbW = JSON.parse(localStorage.getItem('cat_v42_w')) || [];
+    let dbM = JSON.parse(localStorage.getItem('cat_v42_m')) || [];
+    let dbF = JSON.parse(localStorage.getItem('cat_v42_f')) || [];
+
+    window.onload = () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.querySelectorAll('input[type="date"]').forEach(i => i.value = today);
+        const opt = cats.map(c => `<option value="${c.name}">${c.name} (${c.color==='white'?'白':'藍'})</option>`).join('');
+        document.getElementById('w-name').innerHTML = opt;
+        document.getElementById('m-name-sel').innerHTML = opt;
+        render();
+    };
+
+    function switchTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        if(id === 'w-tab') updateChart();
+    }
+
+    function saveW() {
+        const n = document.getElementById('w-name').value;
+        const v = parseFloat(document.getElementById('w-val').value);
+        const d = document.getElementById('w-date').value;
+        if(!v) return;
+        dbW.push({n, v, d});
+        localStorage.setItem('cat_v42_w', JSON.stringify(dbW));
+        render(); document.getElementById('w-val').value = "";
+    }
+
+    function saveM() {
+        const n = document.getElementById('m-name-sel').value;
+        const v = document.getElementById('m-val').value;
+        const d = document.getElementById('m-date').value;
+        if(!v) return;
+        dbM.unshift({n, v, d});
+        localStorage.setItem('cat_v42_m', JSON.stringify(dbM));
+        render(); document.getElementById('m-val').value = "";
+    }
+
+    function saveF() {
+        const d = document.getElementById('f-date').value;
+        const i = document.getElementById('f-item').value;
+        const c = parseFloat(document.getElementById('f-cost').value) || 0;
+        if(!i) return;
+        dbF.unshift({d, i, c});
+        localStorage.setItem('cat_v42_f', JSON.stringify(dbF));
+        render();
+    }
+
+    function render() {
+        document.getElementById('status-grid').innerHTML = cats.map(c => {
+            const h = dbW.filter(w => w.n === c.name).sort((a,b) => new Date(b.d) - new Date(a.d));
+            const last = h[0]; const prev = h[1];
+            let alertStr = (last && prev && last.v < prev.v * 0.95) ? `<div class="alert">⚠️ 下降>5%</div>` : "";
+            return `<div class="cat-card ${c.color==='white'?'is-white':'is-blue'}">
+                <div class="gender-dot dot-${c.gender}"></div>
+                <div style="font-weight:bold">${c.name}</div>
+                <div>${last ? last.v + 'kg' : '--'}</div>${alertStr}</div>`;
+        }).join('');
+        
+        document.getElementById('m-list').innerHTML = `<table>${dbM.slice(0,10).map(m=>`<tr><td>${m.d}</td><td>${m.n}</td><td>${m.v}</td></tr>`).join('')}</table>`;
+        
+        const mth = {}; const yr = {};
+        dbF.forEach(f => { const m = f.d.substring(0,7); const y = f.d.substring(0,4); mth[m]=(mth[m]||0)+f.c; yr[y]=(yr[y]||0)+f.c; });
+        let s = "<h4>月支出</h4><table>"; for(let k in mth) s += `<tr><td>${k}</td><td class="price">$${mth[k]}</td></tr>`;
+        s += "</table><h4>年支出</h4><table>"; for(let k in yr) s += `<tr><td>${k}</td><td class="price">$${yr[k]}</td></tr>`;
+        document.getElementById('f-stats').innerHTML = s + "</table>";
+        updateChart();
+    }
+
+    let chart = null;
+    function updateChart() {
+        const ctx = document.getElementById('wChart').getContext('2d');
+        if(chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: { datasets: cats.map(c => ({
+                label: c.name,
+                data: dbW.filter(w => w.n === c.name).sort((a,b) => new Date(a.d) - new Date(b.d)).slice(-10).map(d => ({x: d.d, y: d.v})),
+                borderColor: c.color === 'white' ? '#90a4ae' : '#37474f',
+                tension: 0.1
+            }))}
+        });
+    }
+
+    function exportData() {
+        navigator.clipboard.writeText(JSON.stringify({dbW, dbM, dbF})).then(() => alert("已複製備份！"));
+    }
+    function importData() {
+        try {
+            const d = JSON.parse(document.getElementById('import-area').value);
+            dbW = d.dbW; dbM = d.dbM; dbF = d.dbF;
+            localStorage.setItem('cat_v42_w', JSON.stringify(dbW));
+            localStorage.setItem('cat_v42_m', JSON.stringify(dbM));
+            localStorage.setItem('cat_v42_f', JSON.stringify(dbF));
+            render(); alert("恢復成功！");
+        } catch(e) { alert("錯誤！"); }
+    }
+</script>
+</body>
+</html>
