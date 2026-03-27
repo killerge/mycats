@@ -1,200 +1,911 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>七貓健康管家</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluent/180/000000/cat.png">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --white-cat: #ffffff; --blue-cat: #78909c; --boy: #2196f3; --girl: #e91e63; --accent: #37474f; }
-        body { font-family: -apple-system, sans-serif; background: #f4f7f9; margin: 0; padding: 10px; padding-bottom: 80px; }
-        .nav { display: flex; background: #fff; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 10px; z-index: 1000; overflow: hidden; }
-        .nav-item { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; color: #78909c; font-weight: bold; font-size: 13px; }
-        .nav-item.active { background: var(--accent); color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .card { background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h3 { margin: 0 0 10px 0; font-size: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cfd8dc; border-radius: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
-        .weight-input { background: #e1f5fe !important; font-weight: bold; color: #01579b; }
-        .btn { background: var(--accent); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: bold; }
-        
-        /* 貓咪方格：區分白貓與藍貓 */
-        .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .cat-card { padding: 12px; border-radius: 12px; text-align: center; position: relative; border: 2px solid transparent; }
-        .is-white { background: #fff; border-color: #eee; color: #333; }
-        .is-blue { background: #546e7a; border-color: #37474f; color: #fff; }
-        .gender-dot { position: absolute; top: 8px; right: 8px; width: 10px; height: 10px; border-radius: 50%; }
-        .dot-M { background: var(--boy); }
-        .dot-F { background: var(--girl); }
-        .alert { color: #ff5252; font-weight: bold; font-size: 11px; margin-top: 5px; background: rgba(255,255,255,0.9); border-radius: 4px; padding: 2px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>貓咪管家</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #fdf9f5;
+  --card: #ffffff;
+  --text: #2a2218;
+  --sub: #8a7f72;
+  --border: #ede6dc;
+  --accent: #6b9fd4;
+  --pink: #f0a0b8;
+  --green: #7dba8a;
+  --yellow: #f5c842;
+  --red: #e8455a;
+  --boy: #6b9fd4;
+  --girl: #f0a0b8;
+  --radius: 18px;
+  --shadow: 0 4px 18px rgba(0,0,0,0.08);
+  --font: '標楷體', 'DFKai-SB', 'BiauKai', 'KaiTi', serif;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: var(--font); background: var(--bg); margin: 0; min-height: 100vh; color: var(--text); }
 
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { padding: 8px 4px; border-bottom: 1px solid #eee; text-align: left; }
-        .price { color: #2e7d32; font-weight: bold; }
-    </style>
+/* ══ HEADER ══ */
+.app-header {
+  background: linear-gradient(135deg,#fff8f0,#fff);
+  padding: 12px 16px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 2px solid var(--border);
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+/* Cute paw logo */
+.header-logo {
+  width: 42px; height: 42px; flex-shrink: 0;
+  background: linear-gradient(135deg,#ffe4b5,#ffd080);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.app-title { font-size: 21px; font-weight: bold; color: var(--text); margin: 0; letter-spacing: 1px; }
+.app-sub { font-size: 11px; color: var(--sub); margin: 0; }
+.gs-badge {
+  margin-left: auto; font-size: 11px; font-weight: bold;
+  padding: 4px 10px; border-radius: 20px; cursor: pointer; white-space: nowrap;
+}
+.gs-ok { background:#e8f5e9; color:#2e7d32; }
+.gs-no { background:#fff3e0; color:#e65100; }
+
+/* ══ BOTTOM NAV ══ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: var(--card); border-top: 2px solid var(--border);
+  display: flex; box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+}
+.bnav-item {
+  flex: 1; padding: 8px 4px 14px; text-align: center;
+  cursor: pointer; color: var(--sub); font-size: 11px;
+  font-family: var(--font); font-weight: bold; transition: color .2s;
+}
+.bnav-svg { display: block; margin: 0 auto 3px; width: 24px; height: 24px; }
+.bnav-item.active { color: var(--accent); }
+
+/* ══ PAGES ══ */
+.page { display: none; padding: 14px 14px 90px; }
+.page.active { display: block; }
+
+/* ══ CARDS ══ */
+.card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 14px;
+  box-shadow: var(--shadow); border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 14px; font-weight: bold; color: var(--sub);
+  margin: 0 0 12px; display: flex; align-items: center; gap: 6px;
+}
+
+/* ══ CAT HEAD TABS ══ */
+.cat-tabs-wrap {
+  display: flex; gap: 10px; overflow-x: auto; padding: 6px 2px 12px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.cat-tabs-wrap::-webkit-scrollbar { display: none; }
+
+.cat-tab {
+  flex-shrink: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  transition: transform .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-tab:active { transform: scale(.9); }
+
+/* The cat-head shape: round + two ear bumps */
+.cat-head {
+  width: 60px; height: 60px; border-radius: 50%;
+  position: relative; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.13); transition: box-shadow .15s;
+}
+/* Ear: left */
+.cat-head::before {
+  content: ''; position: absolute;
+  top: -10px; left: 6px;
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+}
+/* Ear: right */
+.cat-head::after {
+  content: ''; position: absolute;
+  top: -10px; right: 6px;
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+}
+
+/* White cat */
+.ch-white { background: linear-gradient(145deg,#f5f2ec,#e8e2d8); border: 2.5px solid #c8c0b0; }
+.ch-white::before { border-bottom: 13px solid #e0d8cc; }
+.ch-white::after  { border-bottom: 13px solid #e0d8cc; }
+/* Blue-grey cat */
+.ch-blue  { background: linear-gradient(145deg,#c5d9ee,#adc3dc); border: 2.5px solid #88a8c8; }
+.ch-blue::before { border-bottom: 13px solid #b4cce0; }
+.ch-blue::after  { border-bottom: 13px solid #b4cce0; }
+
+/* Selected ring */
+.cat-tab.sel .ch-white { box-shadow: 0 0 0 3px #c8a870, 0 4px 12px rgba(0,0,0,0.15); }
+.cat-tab.sel .ch-blue  { box-shadow: 0 0 0 3px #6b9fd4, 0 4px 12px rgba(0,0,0,0.15); }
+
+.cat-face-emoji { font-size: 28px; line-height: 1; position: relative; z-index: 1; }
+.cat-tab-name {
+  font-size: 12px; font-weight: bold; margin-top: 6px; color: var(--text);
+}
+.cat-tab.sel .cat-tab-name { color: var(--accent); }
+
+/* ══ CAT HERO ══ */
+.cat-hero {
+  border-radius: 16px; padding: 16px;
+  display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+  animation: fadeUp .25s;
+}
+.cat-hero.wh { background: linear-gradient(135deg,#f5f2ec,#ede8de); border: 2px solid #c8c0b0; }
+.cat-hero.bl { background: linear-gradient(135deg,#d8eaf8,#c3d8ee); border: 2px solid #88a8c8; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.cat-avatar-lg {
+  width: 70px; height: 70px; border-radius: 50%;
+  background: rgba(255,255,255,.6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; flex-shrink: 0;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+}
+.cat-name-lg { font-size: 24px; font-weight: bold; margin: 0 0 6px; }
+.cat-meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: bold; color: #fff;
+}
+.bM { background: var(--boy); }
+.bF { background: var(--girl); }
+.bType { background: rgba(0,0,0,.14); color: var(--text); }
+
+/* ══ WEIGHT ALERT ══ */
+.w-alert {
+  background: #fff0f2; border: 2px solid var(--red);
+  border-radius: 12px; padding: 10px 14px;
+  color: var(--red); font-weight: bold; font-size: 13px;
+  margin-bottom: 12px; animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.latest-stat {
+  background: var(--bg); border-radius: 12px; padding: 12px 16px;
+  margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px;
+}
+.stat-big { font-size: 30px; font-weight: bold; color: var(--accent); }
+.stat-unit { font-size: 13px; color: var(--sub); }
+.stat-date { font-size: 11px; color: var(--sub); margin-left: auto; }
+
+/* ══ RECORDS ══ */
+.sec-lbl {
+  font-size: 11px; font-weight: bold; color: var(--sub);
+  letter-spacing: .5px; margin: 14px 0 8px;
+}
+.rec-list { display: flex; flex-direction: column; gap: 6px; }
+.rec-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border-radius: 10px; padding: 9px 12px; font-size: 13px;
+}
+.rec-date { color: var(--sub); font-size: 11px; min-width: 85px; }
+.rec-val { font-weight: bold; flex: 1; }
+.rec-del { color: #ccc; font-size: 17px; cursor: pointer; padding: 2px 4px; transition: color .15s; }
+.rec-del:hover, .rec-del:active { color: var(--red); }
+.empty { color: var(--sub); font-size: 13px; padding: 10px 0; text-align: center; }
+
+/* ══ CHART ══ */
+.chart-wrap { position: relative; height: 200px; }
+
+/* ══ FORMS ══ */
+.form-group { margin-bottom: 10px; }
+.form-label { font-size: 12px; font-weight: bold; color: var(--sub); margin-bottom: 4px; display: block; }
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  font-family: var(--font); font-size: 15px;
+  background: var(--card); color: var(--text);
+  -webkit-appearance: none; appearance: none;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(107,159,212,.15); }
+
+.btn {
+  width: 100%; padding: 13px; border: none; border-radius: 12px;
+  font-family: var(--font); font-size: 15px; font-weight: bold;
+  cursor: pointer; transition: transform .1s, opacity .1s;
+}
+.btn:active { transform: scale(.97); opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-warn    { background: var(--yellow); color: #555; }
+
+.sel-row { display: flex; gap: 8px; }
+.sel-row select { flex: 1; }
+.add-btn {
+  flex-shrink: 0; width: 46px; border-radius: 12px;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 22px; cursor: pointer; font-weight: bold; line-height: 1;
+}
+
+/* ══ INNER TABS ══ */
+.inner-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.inner-tab {
+  flex: 1; padding: 10px; border-radius: 10px; text-align: center;
+  font-weight: bold; font-size: 13px; cursor: pointer; font-family: var(--font);
+  background: var(--bg); color: var(--sub); border: 1.5px solid var(--border);
+  transition: all .15s;
+}
+.inner-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.inner-panel { display: none; }
+.inner-panel.active { display: block; }
+
+/* ══ FINANCE ══ */
+.fin-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border-radius: 10px; padding: 9px 12px;
+  margin-bottom: 6px; font-size: 13px;
+}
+.fin-info { flex: 1; }
+.fin-item { font-weight: bold; }
+.fin-date { font-size: 11px; color: var(--sub); }
+.fin-price { color: #2e7d32; font-weight: bold; min-width: 65px; text-align: right; }
+
+/* ══ STATS ══ */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-box { background: var(--bg); border-radius: 12px; padding: 14px; text-align: center; }
+.stat-box .num { font-size: 22px; font-weight: bold; color: var(--accent); }
+.stat-box .lbl { font-size: 11px; color: var(--sub); margin-top: 3px; }
+
+/* ══ COLLAPSE ══ */
+.col-btn {
+  text-align: center; color: var(--accent); font-size: 12px; font-weight: bold;
+  cursor: pointer; padding: 8px; font-family: var(--font);
+}
+.col-body { display: none; }
+.col-body.open { display: block; }
+
+/* ══ MODAL ══ */
+.overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.4); align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--card); border-radius: 24px 24px 0 0;
+  padding: 24px 20px 44px; width: 100%; max-width: 500px;
+  animation: slideUp .25s;
+}
+@keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:none;opacity:1} }
+.modal-title { font-size: 16px; font-weight: bold; margin: 0 0 16px; font-family: var(--font); }
+.modal-x { float: right; font-size: 22px; cursor: pointer; color: var(--sub); line-height: 1; }
+
+/* GS info */
+.gs-info { font-size: 12px; color: var(--sub); line-height: 1.9; margin-bottom: 12px; }
+.gs-info a { color: var(--accent); }
+.gs-info code { background: var(--bg); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+/* ══ TOAST ══ */
+.toast {
+  position: fixed; bottom: 88px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #2a2218; color: #fff; border-radius: 20px;
+  padding: 10px 22px; font-size: 13px; font-weight: bold;
+  z-index: 999; opacity: 0; transition: all .3s;
+  pointer-events: none; white-space: nowrap; font-family: var(--font);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
 
-<div class="nav">
-    <div class="nav-item active" onclick="switchTab('w-tab')">⚖️ 體重</div>
-    <div class="nav-item" onclick="switchTab('m-tab')">💊 用藥</div>
-    <div class="nav-item" onclick="switchTab('f-tab')">🍴 支出</div>
-    <div class="nav-item" onclick="switchTab('d-tab')">💾 備份</div>
+<!-- ══ HEADER ══ -->
+<div class="app-header">
+  <div class="header-logo">🐾</div>
+  <div>
+    <div class="app-title">貓咪管家</div>
+    <div class="app-sub">七隻寶貝的健康小幫手</div>
+  </div>
+  <div class="gs-badge gs-no" id="gs-badge" onclick="openOverlay('gs-overlay')">☁ 未連線</div>
 </div>
 
-<div id="w-tab" class="tab-content active">
-    <div class="card">
-        <h3>測量體重</h3>
-        <select id="w-name"></select>
-        <input type="date" id="w-date">
-        <input type="number" step="0.01" id="w-val" class="weight-input" placeholder="kg">
-        <button class="btn" onclick="saveW()">紀錄體重</button>
-    </div>
-    <div class="card"><h3>最近 10 次趨勢</h3><canvas id="wChart"></canvas></div>
-    <div class="card"><h3>七貓現況</h3><div id="status-grid" class="cat-grid"></div></div>
+<!-- ══ HOME ══ -->
+<div id="page-home" class="page active">
+  <div class="card">
+    <div class="card-title">選擇貓咪</div>
+    <div class="cat-tabs-wrap" id="cat-tabs"></div>
+  </div>
+  <div id="cat-detail"></div>
 </div>
 
-<div id="m-tab" class="tab-content">
+<!-- ══ RECORD ══ -->
+<div id="page-record" class="page">
+  <div class="inner-tabs">
+    <div class="inner-tab active" onclick="switchInner('rec-w',this)">體重紀錄</div>
+    <div class="inner-tab" onclick="switchInner('rec-d',this)">用藥紀錄</div>
+  </div>
+  <div id="rec-w" class="inner-panel active">
     <div class="card">
-        <h3>用藥紀錄</h3>
-        <select id="m-name-sel"></select>
-        <input type="date" id="m-date">
-        <input type="text" id="m-val" placeholder="藥名 (如: 全能貓S)">
-        <button class="btn" onclick="saveM()">紀錄用藥</button>
+      <div class="card-title">新增體重紀錄</div>
+      <div class="form-group"><label class="form-label">貓咪</label><select id="rw-cat"></select></div>
+      <div class="form-group"><label class="form-label">日期</label><input type="date" id="rw-date"></div>
+      <div class="form-group"><label class="form-label">體重（kg）</label><input type="number" step="0.01" id="rw-val" placeholder="例：4.25"></div>
+      <button class="btn btn-primary" onclick="saveWeight()">儲存體重</button>
     </div>
-    <div class="card"><h3>用藥歷史</h3><div id="m-list"></div></div>
+  </div>
+  <div id="rec-d" class="inner-panel">
+    <div class="card">
+      <div class="card-title">新增用藥紀錄</div>
+      <div class="form-group"><label class="form-label">貓咪</label><select id="rd-cat"></select></div>
+      <div class="form-group"><label class="form-label">日期</label><input type="date" id="rd-date"></div>
+      <div class="form-group">
+        <label class="form-label">藥品名稱</label>
+        <div class="sel-row">
+          <select id="rd-drug"></select>
+          <button class="add-btn" onclick="openOverlay('ov-drug')">＋</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveDrug()">儲存用藥</button>
+    </div>
+  </div>
 </div>
 
-<div id="f-tab" class="tab-content">
+<!-- ══ FINANCE ══ -->
+<div id="page-finance" class="page">
+  <div class="inner-tabs">
+    <div class="inner-tab active" onclick="switchInner('fin-f',this)">飼料支出</div>
+    <div class="inner-tab" onclick="switchInner('fin-m',this)">藥品支出</div>
+  </div>
+  <div id="fin-f" class="inner-panel active">
     <div class="card">
-        <h3>飼料支出</h3>
-        <input type="date" id="f-date">
-        <input type="text" id="f-item" placeholder="品項">
-        <input type="number" id="f-cost" placeholder="金額">
-        <button class="btn" onclick="saveF()">紀錄支出</button>
+      <div class="card-title">新增飼料支出</div>
+      <div class="form-group">
+        <label class="form-label">飼料品項</label>
+        <div class="sel-row">
+          <select id="ff-sel"></select>
+          <button class="add-btn" onclick="openOverlay('ov-feed')">＋</button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">金額（元）</label><input type="number" id="ff-cost" placeholder="例：850"></div>
+      <div class="form-group"><label class="form-label">日期</label><input type="date" id="ff-date"></div>
+      <button class="btn btn-primary" onclick="saveFinance('feed')">儲存</button>
     </div>
-    <div class="card"><h3>收支統計</h3><div id="f-stats"></div></div>
+    <div class="card">
+      <div class="card-title">近期飼料支出</div>
+      <div id="ff-list"></div>
+      <div class="col-btn" id="ff-more-btn" onclick="toggleMore('feed')">▼ 查看更多</div>
+      <div class="col-body" id="ff-more-body"></div>
+    </div>
+  </div>
+  <div id="fin-m" class="inner-panel">
+    <div class="card">
+      <div class="card-title">新增藥品支出</div>
+      <div class="form-group">
+        <label class="form-label">藥品品項</label>
+        <div class="sel-row">
+          <select id="fm-sel"></select>
+          <button class="add-btn" onclick="openOverlay('ov-med')">＋</button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">金額（元）</label><input type="number" id="fm-cost" placeholder="例：300"></div>
+      <div class="form-group"><label class="form-label">日期</label><input type="date" id="fm-date"></div>
+      <button class="btn btn-primary" onclick="saveFinance('med')">儲存</button>
+    </div>
+    <div class="card">
+      <div class="card-title">近期藥品支出</div>
+      <div id="fm-list"></div>
+      <div class="col-btn" id="fm-more-btn" onclick="toggleMore('med')">▼ 查看更多</div>
+      <div class="col-body" id="fm-more-body"></div>
+    </div>
+  </div>
 </div>
 
-<div id="d-tab" class="tab-content">
-    <div class="card">
-        <h3>數據備份</h3>
-        <p style="font-size:12px; color:red;">* 換手機或資料不見時，貼上備份文字即可恢復。</p>
-        <button class="btn" onclick="exportData()" style="background:#4caf50;">📋 點我複製備份</button>
-        <textarea id="import-area" style="width:100%; height:60px; margin-top:10px;" placeholder="在此貼上備份文字..."></textarea>
-        <button class="btn" onclick="importData()" style="background:#ffa000; margin-top:5px;">💾 恢復資料</button>
-    </div>
+<!-- ══ STATS ══ -->
+<div id="page-stats" class="page">
+  <div class="card">
+    <div class="card-title">本月花費</div>
+    <div class="stat-grid" id="stats-monthly"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">年度花費統計</div>
+    <div id="stats-yearly"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">飼料月支出走勢</div>
+    <div class="chart-wrap"><canvas id="sFeedChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">藥品月支出走勢</div>
+    <div class="chart-wrap"><canvas id="sMedChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">資料備份</div>
+    <p style="font-size:12px;color:var(--sub);margin:0 0 10px">換手機前請複製備份，新手機貼上即可恢復。</p>
+    <button class="btn btn-success" onclick="exportData()" style="margin-bottom:8px">複製備份</button>
+    <textarea id="import-area" style="height:60px;margin-bottom:8px" placeholder="在此貼上備份文字…"></textarea>
+    <button class="btn btn-warn" onclick="importData()">恢復資料</button>
+  </div>
 </div>
+
+<!-- ══ BOTTOM NAV ══ -->
+<div class="bottom-nav">
+  <div class="bnav-item active" onclick="switchPage('page-home',this)">
+    <!-- home icon -->
+    <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/>
+    </svg>首頁
+  </div>
+  <div class="bnav-item" onclick="switchPage('page-record',this)">
+    <!-- clipboard icon -->
+    <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="2" width="6" height="4" rx="1"/><rect x="3" y="5" width="18" height="17" rx="2"/>
+      <line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/>
+    </svg>紀錄
+  </div>
+  <div class="bnav-item" onclick="switchPage('page-finance',this)">
+    <!-- wallet icon -->
+    <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="6" width="22" height="15" rx="2"/><path d="M16 14a1 1 0 1 0 2 0 1 1 0 0 0-2 0z" fill="currentColor"/>
+      <path d="M1 10h22"/>
+    </svg>花費
+  </div>
+  <div class="bnav-item" onclick="switchPage('page-stats',this)">
+    <!-- bar chart icon -->
+    <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/>
+      <rect x="17" y="9" width="4" height="12" rx="1"/>
+    </svg>統計
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+<!-- Add drug -->
+<div class="overlay" id="ov-drug" onclick="overlayBg(event,'ov-drug')">
+  <div class="modal">
+    <div class="modal-title">新增用藥品項<span class="modal-x" onclick="closeOverlay('ov-drug')">✕</span></div>
+    <div class="form-group"><label class="form-label">藥品名稱</label><input type="text" id="inp-drug" placeholder="例：全能貓 S"></div>
+    <button class="btn btn-primary" onclick="addItem('drug')">新增</button>
+  </div>
+</div>
+<!-- Add feed -->
+<div class="overlay" id="ov-feed" onclick="overlayBg(event,'ov-feed')">
+  <div class="modal">
+    <div class="modal-title">新增飼料品項<span class="modal-x" onclick="closeOverlay('ov-feed')">✕</span></div>
+    <div class="form-group"><label class="form-label">飼料名稱</label><input type="text" id="inp-feed" placeholder="例：希爾思腎臟處方"></div>
+    <button class="btn btn-primary" onclick="addItem('feed')">新增</button>
+  </div>
+</div>
+<!-- Add med finance -->
+<div class="overlay" id="ov-med" onclick="overlayBg(event,'ov-med')">
+  <div class="modal">
+    <div class="modal-title">新增藥品品項<span class="modal-x" onclick="closeOverlay('ov-med')">✕</span></div>
+    <div class="form-group"><label class="form-label">藥品名稱</label><input type="text" id="inp-med" placeholder="例：全能貓 L"></div>
+    <button class="btn btn-primary" onclick="addItem('med')">新增</button>
+  </div>
+</div>
+<!-- Google Sheets -->
+<div class="overlay" id="gs-overlay" onclick="overlayBg(event,'gs-overlay')">
+  <div class="modal">
+    <div class="modal-title">連接 Google Sheets<span class="modal-x" onclick="closeOverlay('gs-overlay')">✕</span></div>
+    <div class="gs-info">
+      <b>設定步驟：</b><br>
+      1. 前往 <a href="https://sheets.new" target="_blank">sheets.new</a> 建立試算表<br>
+      2. 複製網址中的 Sheet ID（<code>/d/<b>此段文字</b>/edit</code>）<br>
+      3. 點「擴充功能 → Apps Script」，貼入下方程式碼<br>
+      4. 部署為「網路應用程式」（任何人可存取），複製部署網址<br><br>
+      <details>
+        <summary style="cursor:pointer;color:var(--accent);font-weight:bold">▶ 查看 Apps Script 程式碼</summary>
+        <textarea readonly id="gs-code-area" style="height:130px;font-size:10px;font-family:monospace;margin-top:8px;background:#f5f5f5" onclick="this.select()"></textarea>
+        <button class="btn btn-primary" style="margin-top:6px;font-size:13px" onclick="copyGsCode()">複製程式碼</button>
+      </details>
+    </div>
+    <div class="form-group"><label class="form-label">Apps Script 部署網址</label><input type="text" id="gs-url-inp" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div class="form-group"><label class="form-label">Google Sheet ID</label><input type="text" id="gs-id-inp" placeholder="1BxiMV…（從網址複製）"></div>
+    <button class="btn btn-primary" onclick="saveGsConfig()">儲存連線設定</button>
+    <button class="btn btn-warn" style="margin-top:8px" onclick="testGsSync()">測試同步</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-    const cats = [
-        {name:"滿滿", color:"white", gender:"M"}, {name:"尖尖", color:"white", gender:"F"}, {name:"阿兩", color:"white", gender:"M"},
-        {name:"牛牛", color:"blue", gender:"F"}, {name:"熊熊", color:"blue", gender:"M"}, {name:"歪歪", color:"blue", gender:"M"}, {name:"發發", color:"blue", gender:"F"}
-    ];
-    let dbW = JSON.parse(localStorage.getItem('cat_v42_w')) || [];
-    let dbM = JSON.parse(localStorage.getItem('cat_v42_m')) || [];
-    let dbF = JSON.parse(localStorage.getItem('cat_v42_f')) || [];
+// ══ CAT DATA ══
+const CATS = [
+  {name:"牛牛", color:"blue",  gender:"F", bday:"2023-10-14", face:"😺"},
+  {name:"滿滿", color:"white", gender:"M", bday:"2024-01-28", face:"😸"},
+  {name:"熊熊", color:"blue",  gender:"M", bday:"2024-02-01", face:"😻"},
+  {name:"阿兩", color:"white", gender:"M", bday:"2024-02-01", face:"🙀"},
+  {name:"尖尖", color:"white", gender:"F", bday:"2024-02-01", face:"😽"},
+  {name:"歪歪", color:"blue",  gender:"M", bday:"2024-02-01", face:"😾"},
+  {name:"發發", color:"blue",  gender:"F", bday:"2024-02-01", face:"😼"},
+];
 
-    window.onload = () => {
-        const today = new Date().toISOString().split('T')[0];
-        document.querySelectorAll('input[type="date"]').forEach(i => i.value = today);
-        const opt = cats.map(c => `<option value="${c.name}">${c.name} (${c.color==='white'?'白':'藍'})</option>`).join('');
-        document.getElementById('w-name').innerHTML = opt;
-        document.getElementById('m-name-sel').innerHTML = opt;
-        render();
-    };
+// ══ DB ══
+let dbW     = ld('c7_w')     || [];
+let dbD     = ld('c7_d')     || [];
+let dbFF    = ld('c7_ff')    || [];
+let dbFM    = ld('c7_fm')    || [];
+let dbDrugs = ld('c7_drugs') || ["全能貓S","全能貓L","心絲蟲藥","滴蚤易","益心安"];
+let dbFeeds = ld('c7_feeds') || ["皇家腎臟處方","希爾思腎臟","主食罐","乾飼料","流質補充罐"];
+let dbMeds  = ld('c7_meds')  || ["全能貓S","全能貓L","滴蚤易","心絲蟲藥","益心安"];
+let gsUrl   = localStorage.getItem('gs_url') || '';
+let gsId    = localStorage.getItem('gs_id')  || '';
 
-    function switchTab(id) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        event.currentTarget.classList.add('active');
-        if(id === 'w-tab') updateChart();
-    }
+let activeCat = 0;
+let chartCW = null, chartSF = null, chartSM = null;
 
-    function saveW() {
-        const n = document.getElementById('w-name').value;
-        const v = parseFloat(document.getElementById('w-val').value);
-        const d = document.getElementById('w-date').value;
-        if(!v) return;
-        dbW.push({n, v, d});
-        localStorage.setItem('cat_v42_w', JSON.stringify(dbW));
-        render(); document.getElementById('w-val').value = "";
-    }
+const GS_CODE = `function doPost(e){
+  var ss=SpreadsheetApp.openById(e.parameter.sheetId);
+  var sh=ss.getSheetByName(e.parameter.tab)||ss.insertSheet(e.parameter.tab);
+  var row=JSON.parse(e.parameter.row);
+  sh.appendRow(row);
+  return ContentService.createTextOutput('ok');
+}
+function doGet(e){
+  var ss=SpreadsheetApp.openById(e.parameter.sheetId);
+  var sh=ss.getSheetByName(e.parameter.tab);
+  if(!sh)return ContentService.createTextOutput('[]');
+  var data=sh.getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
 
-    function saveM() {
-        const n = document.getElementById('m-name-sel').value;
-        const v = document.getElementById('m-val').value;
-        const d = document.getElementById('m-date').value;
-        if(!v) return;
-        dbM.unshift({n, v, d});
-        localStorage.setItem('cat_v42_m', JSON.stringify(dbM));
-        render(); document.getElementById('m-val').value = "";
-    }
+function ld(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function sv(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+function saveAll(){
+  sv('c7_w',dbW); sv('c7_d',dbD); sv('c7_ff',dbFF); sv('c7_fm',dbFM);
+  sv('c7_drugs',dbDrugs); sv('c7_feeds',dbFeeds); sv('c7_meds',dbMeds);
+}
 
-    function saveF() {
-        const d = document.getElementById('f-date').value;
-        const i = document.getElementById('f-item').value;
-        const c = parseFloat(document.getElementById('f-cost').value) || 0;
-        if(!i) return;
-        dbF.unshift({d, i, c});
-        localStorage.setItem('cat_v42_f', JSON.stringify(dbF));
-        render();
-    }
+// ══ INIT ══
+window.onload = ()=>{
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('input[type="date"]').forEach(i=>i.value=today);
+  document.getElementById('gs-code-area').value = GS_CODE;
+  buildTabs(); populateSels(); renderDetail(0); updateGsBadge();
+  if(gsUrl) document.getElementById('gs-url-inp').value=gsUrl;
+  if(gsId)  document.getElementById('gs-id-inp').value=gsId;
+};
 
-    function render() {
-        document.getElementById('status-grid').innerHTML = cats.map(c => {
-            const h = dbW.filter(w => w.n === c.name).sort((a,b) => new Date(b.d) - new Date(a.d));
-            const last = h[0]; const prev = h[1];
-            let alertStr = (last && prev && last.v < prev.v * 0.95) ? `<div class="alert">⚠️ 下降>5%</div>` : "";
-            return `<div class="cat-card ${c.color==='white'?'is-white':'is-blue'}">
-                <div class="gender-dot dot-${c.gender}"></div>
-                <div style="font-weight:bold">${c.name}</div>
-                <div>${last ? last.v + 'kg' : '--'}</div>${alertStr}</div>`;
-        }).join('');
-        
-        document.getElementById('m-list').innerHTML = `<table>${dbM.slice(0,10).map(m=>`<tr><td>${m.d}</td><td>${m.n}</td><td>${m.v}</td></tr>`).join('')}</table>`;
-        
-        const mth = {}; const yr = {};
-        dbF.forEach(f => { const m = f.d.substring(0,7); const y = f.d.substring(0,4); mth[m]=(mth[m]||0)+f.c; yr[y]=(yr[y]||0)+f.c; });
-        let s = "<h4>月支出</h4><table>"; for(let k in mth) s += `<tr><td>${k}</td><td class="price">$${mth[k]}</td></tr>`;
-        s += "</table><h4>年支出</h4><table>"; for(let k in yr) s += `<tr><td>${k}</td><td class="price">$${yr[k]}</td></tr>`;
-        document.getElementById('f-stats').innerHTML = s + "</table>";
-        updateChart();
-    }
+// ══ AGE ══
+function calcAge(bday){
+  const b=new Date(bday), n=new Date();
+  let y=n.getFullYear()-b.getFullYear(), m=n.getMonth()-b.getMonth();
+  if(m<0){y--;m+=12;}
+  return y>0?`${y}歲${m}個月`:`${m}個月`;
+}
 
-    let chart = null;
-    function updateChart() {
-        const ctx = document.getElementById('wChart').getContext('2d');
-        if(chart) chart.destroy();
-        chart = new Chart(ctx, {
-            type: 'line',
-            data: { datasets: cats.map(c => ({
-                label: c.name,
-                data: dbW.filter(w => w.n === c.name).sort((a,b) => new Date(a.d) - new Date(b.d)).slice(-10).map(d => ({x: d.d, y: d.v})),
-                borderColor: c.color === 'white' ? '#90a4ae' : '#37474f',
-                tension: 0.1
-            }))}
-        });
-    }
+// ══ CAT TABS ══
+function buildTabs(){
+  document.getElementById('cat-tabs').innerHTML = CATS.map((c,i)=>`
+    <div class="cat-tab ${i===activeCat?'sel':''}" onclick="selectCat(${i})">
+      <div class="cat-head ${c.color==='white'?'ch-white':'ch-blue'}">
+        <span class="cat-face-emoji">${c.face}</span>
+      </div>
+      <div class="cat-tab-name">${c.name}</div>
+    </div>`).join('');
+}
+function selectCat(i){ activeCat=i; buildTabs(); renderDetail(i); }
 
-    function exportData() {
-        navigator.clipboard.writeText(JSON.stringify({dbW, dbM, dbF})).then(() => alert("已複製備份！"));
+// ══ CAT DETAIL ══
+function renderDetail(i){
+  const c=CATS[i];
+  const wh=dbW.filter(w=>w.n===c.name).sort((a,b)=>new Date(b.d)-new Date(a.d));
+  const dh=dbD.filter(d=>d.n===c.name).sort((a,b)=>new Date(b.d)-new Date(a.d));
+  const lat=wh[0], prv=wh[1];
+  const alrt = lat&&prv&&lat.v<prv.v*.95;
+  const heroC = c.color==='white'?'wh':'bl';
+
+  let h = `<div>`;
+  // Hero
+  h+=`<div class="cat-hero ${heroC}">
+    <div class="cat-avatar-lg">${c.face}</div>
+    <div>
+      <div class="cat-name-lg">${c.name}</div>
+      <div class="cat-meta">
+        <span class="badge ${c.gender==='M'?'bM':'bF'}">${c.gender==='M'?'♂ 公':'♀ 母'}</span>
+        <span class="badge bType">${c.color==='blue'?'藍色英短':'白色英短'}</span>
+        <span style="font-size:11px;color:var(--sub)">🎂 ${c.bday}（${calcAge(c.bday)}）</span>
+      </div>
+    </div>
+  </div>`;
+
+  // Alert
+  if(alrt) h+=`<div class="w-alert">⚠ 體重警告：${c.name} 較上次下降超過 5%（${prv.v} kg → ${lat.v} kg）！</div>`;
+
+  // Weight
+  h+=`<div class="card"><div class="card-title">體重紀錄</div>`;
+  if(lat){
+    h+=`<div class="latest-stat">
+      <span class="stat-big">${lat.v}</span><span class="stat-unit">kg</span>
+      <span class="stat-date">${lat.d}</span>
+    </div>`;
+  } else h+=`<div class="empty">尚無體重紀錄</div>`;
+
+  h+=`<div class="sec-lbl">近 5 次紀錄</div><div class="rec-list">`;
+  if(!wh.length) h+=`<div class="empty">暫無紀錄</div>`;
+  wh.slice(0,5).forEach(w=>{
+    h+=`<div class="rec-row">
+      <span class="rec-date">${w.d}</span>
+      <span class="rec-val">${w.v} kg</span>
+      <span class="rec-del" onclick="delW('${c.name}','${w.d}',${w.v})">🗑</span>
+    </div>`;
+  });
+  h+=`</div>`;
+  const cd=[...wh].reverse().slice(-10).map(w=>({x:w.d,y:w.v}));
+  if(cd.length>1) h+=`<div class="sec-lbl" style="margin-top:14px">體重趨勢圖</div><div class="chart-wrap"><canvas id="catWChart"></canvas></div>`;
+  h+=`</div>`;
+
+  // Drug
+  h+=`<div class="card"><div class="card-title">驅蟲 ／ 用藥</div>`;
+  if(dh[0]){
+    h+=`<div class="latest-stat">
+      <span class="stat-big" style="font-size:18px;color:#7b5ea7">${dh[0].drug}</span>
+      <span class="stat-date">${dh[0].d}</span>
+    </div>`;
+  } else h+=`<div class="empty">尚無用藥紀錄</div>`;
+  h+=`<div class="sec-lbl">近 5 次用藥</div><div class="rec-list">`;
+  if(!dh.length) h+=`<div class="empty">暫無紀錄</div>`;
+  dh.slice(0,5).forEach(d=>{
+    h+=`<div class="rec-row">
+      <span class="rec-date">${d.d}</span>
+      <span class="rec-val" style="color:#7b5ea7">${d.drug}</span>
+      <span class="rec-del" onclick="delD('${c.name}','${d.d}','${d.drug}')">🗑</span>
+    </div>`;
+  });
+  h+=`</div></div></div>`;
+  document.getElementById('cat-detail').innerHTML=h;
+
+  if(cd.length>1){
+    setTimeout(()=>{
+      const el=document.getElementById('catWChart'); if(!el) return;
+      if(chartCW) chartCW.destroy();
+      chartCW=new Chart(el.getContext('2d'),{
+        type:'line',
+        data:{datasets:[{
+          label:'kg', data:cd, tension:.35, fill:true, pointRadius:5,
+          borderColor:c.color==='white'?'#a09080':'#6b9fd4',
+          backgroundColor:c.color==='white'?'rgba(160,144,128,.1)':'rgba(107,159,212,.1)',
+          pointBackgroundColor:'#fff',
+          pointBorderColor:c.color==='white'?'#a09080':'#6b9fd4',
+          pointBorderWidth:2,
+        }]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          scales:{
+            x:{type:'category',ticks:{font:{size:10,family:'serif'}},grid:{display:false}},
+            y:{ticks:{font:{size:10,family:'serif'}},grid:{color:'#f0ebe4'}}
+          },
+          plugins:{legend:{display:false}}
+        }
+      });
+    },60);
+  }
+}
+
+// ══ DELETE ══
+function delW(n,d,v){
+  if(!confirm(`刪除 ${n} ${d} ${v}kg？`)) return;
+  const idx=dbW.findIndex(w=>w.n===n&&w.d===d&&w.v===v);
+  if(idx>-1){dbW.splice(idx,1);saveAll();renderDetail(activeCat);}
+}
+function delD(n,d,drug){
+  if(!confirm(`刪除 ${n} ${d} ${drug}？`)) return;
+  const idx=dbD.findIndex(x=>x.n===n&&x.d===d&&x.drug===drug);
+  if(idx>-1){dbD.splice(idx,1);saveAll();renderDetail(activeCat);}
+}
+function delF(type,idx){
+  if(!confirm('確定刪除此筆支出？')) return;
+  if(type==='feed') dbFF.splice(idx,1); else dbFM.splice(idx,1);
+  saveAll(); renderFinance();
+}
+
+// ══ SAVE ══
+function saveWeight(){
+  const n=document.getElementById('rw-cat').value;
+  const d=document.getElementById('rw-date').value;
+  const v=parseFloat(document.getElementById('rw-val').value);
+  if(!v||!d) return toast('請填入完整資料');
+  dbW.push({n,d,v}); saveAll();
+  document.getElementById('rw-val').value='';
+  toast(`${n} ${v}kg 已儲存`);
+  gsAppend('體重',[n,d,v]);
+  renderDetail(activeCat);
+}
+function saveDrug(){
+  const n=document.getElementById('rd-cat').value;
+  const d=document.getElementById('rd-date').value;
+  const drug=document.getElementById('rd-drug').value;
+  if(!drug||!d) return toast('請填入完整資料');
+  dbD.unshift({n,d,drug}); saveAll();
+  toast(`${n} ${drug} 已儲存`);
+  gsAppend('用藥',[n,d,drug]);
+  renderDetail(activeCat);
+}
+function saveFinance(type){
+  const isSel = type==='feed';
+  const item  = document.getElementById(isSel?'ff-sel':'fm-sel').value;
+  const cost  = parseFloat(document.getElementById(isSel?'ff-cost':'fm-cost').value)||0;
+  const date  = document.getElementById(isSel?'ff-date':'fm-date').value;
+  if(!item||!cost) return toast('請填入品項與金額');
+  if(type==='feed') dbFF.unshift({item,cost,date}); else dbFM.unshift({item,cost,date});
+  saveAll();
+  document.getElementById(isSel?'ff-cost':'fm-cost').value='';
+  renderFinance(); toast('支出已儲存');
+  gsAppend(type==='feed'?'飼料支出':'藥品支出',[item,cost,date]);
+}
+
+// ══ FINANCE RENDER ══
+function renderFinance(){
+  mkFList('feed',dbFF,'ff-list','ff-more-body','ff-more-btn');
+  mkFList('med', dbFM,'fm-list','fm-more-body','fm-more-btn');
+}
+function mkFList(type,db,listId,moreId,btnId){
+  const mk=(arr,off)=>arr.map((f,i)=>`
+    <div class="fin-row">
+      <div class="fin-info">
+        <div class="fin-item">${f.item}</div>
+        <div class="fin-date">${f.date||''}</div>
+      </div>
+      <div class="fin-price">$${f.cost}</div>
+      <span class="rec-del" onclick="delF('${type}',${off+i})">🗑</span>
+    </div>`).join('');
+  document.getElementById(listId).innerHTML=mk(db.slice(0,10),0);
+  document.getElementById(moreId).innerHTML=mk(db.slice(10),10);
+  document.getElementById(btnId).style.display=db.length>10?'block':'none';
+}
+function toggleMore(type){
+  const id=type==='feed'?'ff-more-body':'fm-more-body';
+  const btn=type==='feed'?'ff-more-btn':'fm-more-btn';
+  const el=document.getElementById(id);
+  el.classList.toggle('open');
+  document.getElementById(btn).textContent=el.classList.contains('open')?'▲ 收起':'▼ 查看更多';
+}
+
+// ══ STATS ══
+function renderStats(){
+  const mF={},mM={},yF={},yM={};
+  dbFF.forEach(f=>{const m=f.date.slice(0,7),y=f.date.slice(0,4);mF[m]=(mF[m]||0)+f.cost;yF[y]=(yF[y]||0)+f.cost;});
+  dbFM.forEach(f=>{const m=f.date.slice(0,7),y=f.date.slice(0,4);mM[m]=(mM[m]||0)+f.cost;yM[y]=(yM[y]||0)+f.cost;});
+  const tm=new Date().toISOString().slice(0,7);
+  document.getElementById('stats-monthly').innerHTML=`
+    <div class="stat-box"><div class="num">$${mF[tm]||0}</div><div class="lbl">本月飼料</div></div>
+    <div class="stat-box"><div class="num">$${mM[tm]||0}</div><div class="lbl">本月藥品</div></div>
+    <div class="stat-box" style="grid-column:span 2">
+      <div class="num" style="color:#2e7d32">$${(mF[tm]||0)+(mM[tm]||0)}</div>
+      <div class="lbl">本月合計</div>
+    </div>`;
+  const allY=[...new Set([...Object.keys(yF),...Object.keys(yM)])].sort().reverse();
+  document.getElementById('stats-yearly').innerHTML=allY.map(y=>`
+    <div class="fin-row">
+      <div class="fin-info">
+        <div class="fin-item">${y} 年</div>
+        <div class="fin-date">飼料 $${yF[y]||0}　藥品 $${yM[y]||0}</div>
+      </div>
+      <div class="fin-price">$${(yF[y]||0)+(yM[y]||0)}</div>
+    </div>`).join('')||`<div class="empty">暫無資料</div>`;
+  const allM=[...new Set([...Object.keys(mF),...Object.keys(mM)])].sort().slice(-12);
+  mkBar('sFeedChart',allM,allM.map(m=>mF[m]||0),'#6b9fd4','飼料',chartSF,c=>chartSF=c);
+  mkBar('sMedChart', allM,allM.map(m=>mM[m]||0),'#f0a0b8','藥品',chartSM,c=>chartSM=c);
+}
+function mkBar(id,labels,data,color,label,ex,set){
+  const el=document.getElementById(id); if(!el) return;
+  if(ex) ex.destroy();
+  set(new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{label,data,backgroundColor:color+'99',borderColor:color,borderRadius:8,borderWidth:2}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{font:{size:10,family:'serif'}},grid:{display:false}},
+        y:{ticks:{font:{size:10,family:'serif'},callback:v=>`$${v}`},grid:{color:'#f0ebe4'}}
+      }
     }
-    function importData() {
-        try {
-            const d = JSON.parse(document.getElementById('import-area').value);
-            dbW = d.dbW; dbM = d.dbM; dbF = d.dbF;
-            localStorage.setItem('cat_v42_w', JSON.stringify(dbW));
-            localStorage.setItem('cat_v42_m', JSON.stringify(dbM));
-            localStorage.setItem('cat_v42_f', JSON.stringify(dbF));
-            render(); alert("恢復成功！");
-        } catch(e) { alert("錯誤！"); }
-    }
+  }));
+}
+
+// ══ SELECTS ══
+function populateSels(){
+  const cats=CATS.map(c=>`<option value="${c.name}">${c.face} ${c.name}</option>`).join('');
+  document.getElementById('rw-cat').innerHTML=cats;
+  document.getElementById('rd-cat').innerHTML=cats;
+  rebDrug(); rebFeed(); rebMed();
+}
+function rebDrug(){ document.getElementById('rd-drug').innerHTML=dbDrugs.map(d=>`<option>${d}</option>`).join(''); }
+function rebFeed(){ document.getElementById('ff-sel').innerHTML=dbFeeds.map(d=>`<option>${d}</option>`).join(''); }
+function rebMed(){ document.getElementById('fm-sel').innerHTML=dbMeds.map(d=>`<option>${d}</option>`).join(''); }
+
+function addItem(type){
+  const map={drug:['inp-drug',dbDrugs,rebDrug,'ov-drug'],feed:['inp-feed',dbFeeds,rebFeed,'ov-feed'],med:['inp-med',dbMeds,rebMed,'ov-med']};
+  const [inpId,arr,reb,ovId]=map[type];
+  const v=document.getElementById(inpId).value.trim();
+  if(!v) return;
+  if(!arr.includes(v)) arr.push(v);
+  saveAll(); reb();
+  document.getElementById(inpId).value='';
+  closeOverlay(ovId); toast('已新增：'+v);
+}
+
+// ══ OVERLAY ══
+function openOverlay(id){ document.getElementById(id).classList.add('open'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+function overlayBg(e,id){ if(e.target.id===id) closeOverlay(id); }
+
+// ══ GOOGLE SHEETS ══
+function updateGsBadge(){
+  const b=document.getElementById('gs-badge');
+  b.textContent=gsUrl&&gsId?'☁ 已連線':'☁ 未連線';
+  b.className='gs-badge '+(gsUrl&&gsId?'gs-ok':'gs-no');
+}
+function saveGsConfig(){
+  gsUrl=document.getElementById('gs-url-inp').value.trim();
+  gsId=document.getElementById('gs-id-inp').value.trim();
+  if(!gsUrl||!gsId) return toast('請填入網址與 Sheet ID');
+  localStorage.setItem('gs_url',gsUrl); localStorage.setItem('gs_id',gsId);
+  updateGsBadge(); closeOverlay('gs-overlay'); toast('✅ Google Sheets 設定已儲存');
+}
+async function gsAppend(tab,rowArr){
+  if(!gsUrl||!gsId) return;
+  try{
+    await fetch(gsUrl,{
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`sheetId=${encodeURIComponent(gsId)}&tab=${encodeURIComponent(tab)}&row=${encodeURIComponent(JSON.stringify(rowArr))}`
+    });
+  }catch(e){ console.warn('GS sync:',e); }
+}
+async function testGsSync(){
+  if(!gsUrl||!gsId) return toast('請先填入連線設定');
+  toast('測試中…');
+  await gsAppend('測試',['test',new Date().toISOString()]);
+  toast('✅ 已傳送測試資料，請檢查 Google Sheets');
+}
+function copyGsCode(){
+  navigator.clipboard.writeText(GS_CODE).then(()=>toast('✅ 程式碼已複製'));
+}
+
+// ══ BACKUP ══
+function exportData(){
+  const json=JSON.stringify({dbW,dbD,dbFF,dbFM,dbDrugs,dbFeeds,dbMeds});
+  navigator.clipboard.writeText(json).then(()=>toast('✅ 備份已複製'))
+    .catch(()=>{ document.getElementById('import-area').value=json; toast('請手動複製文字框內容'); });
+}
+function importData(){
+  try{
+    const d=JSON.parse(document.getElementById('import-area').value.trim());
+    dbW=d.dbW||[]; dbD=d.dbD||[]; dbFF=d.dbFF||[]; dbFM=d.dbFM||[];
+    dbDrugs=d.dbDrugs||dbDrugs; dbFeeds=d.dbFeeds||dbFeeds; dbMeds=d.dbMeds||dbMeds;
+    saveAll(); populateSels(); renderDetail(activeCat); renderFinance();
+    toast('✅ 資料恢復成功');
+  }catch(e){ toast('❌ 格式錯誤，請確認備份內容'); }
+}
+
+// ══ NAV ══
+function switchPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active'); el.classList.add('active');
+  if(id==='page-stats') setTimeout(renderStats,60);
+  if(id==='page-finance') renderFinance();
+}
+function switchInner(pid,el){
+  const pg=el.closest('.page');
+  pg.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('active'));
+  pg.querySelectorAll('.inner-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active'); document.getElementById(pid).classList.add('active');
+}
+
+// ══ TOAST ══
+function toast(msg,ms=2400){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms);
+}
 </script>
 </body>
 </html>
