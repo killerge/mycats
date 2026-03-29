@@ -297,8 +297,14 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   padding: 10px 22px; font-size: 13px; font-weight: bold;
   z-index: 999; opacity: 0; transition: all .3s;
   pointer-events: none; white-space: nowrap; font-family: var(--font);
+  display: flex; align-items: center; gap: 8px;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.t-ok  { background: #2e7d32; }
+.toast.t-err { background: #c62828; }
+/* GS sync indicator in header */
+.gs-syncing { animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -538,21 +544,65 @@ let gsId    = localStorage.getItem('gs_id')  || '';
 let activeCat = 0;
 let chartCW = null, chartSF = null, chartSM = null;
 
-const GS_CODE = `function doPost(e){
-  var ss=SpreadsheetApp.openById(e.parameter.sheetId);
-  var sh=ss.getSheetByName(e.parameter.tab)||ss.insertSheet(e.parameter.tab);
-  var row=JSON.parse(e.parameter.row);
-  sh.appendRow(row);
-  return ContentService.createTextOutput('ok');
+const GS_CODE = `// 七貓健康管家 Apps Script（請貼入 Apps Script 後執行 initSheets 一次）
+var SHEETS = {
+  '體重':    ['貓咪','日期','體重(kg)','寫入時間'],
+  '用藥':    ['貓咪','日期','藥品名稱','寫入時間'],
+  '飼料支出':['品項','金額(元)','日期','寫入時間'],
+  '藥品支出':['品項','金額(元)','日期','寫入時間'],
+};
+
+function initSheets(){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  for(var t in SHEETS){
+    var sh=ss.getSheetByName(t);
+    if(!sh) sh=ss.insertSheet(t);
+    if(sh.getLastRow()===0){
+      sh.appendRow(SHEETS[t]);
+      sh.getRange(1,1,1,SHEETS[t].length).setBackground('#E8F0FE').setFontWeight('bold');
+      sh.setFrozenRows(1);
+    }
+  }
+  var blank=ss.getSheetByName('工作表1');
+  if(blank&&ss.getSheets().length>1) ss.deleteSheet(blank);
+  SpreadsheetApp.getUi().alert('初始化完成！已建立所有分頁。');
 }
+
+// 統一用 doGet 處理（JSONP 只支援 GET）
 function doGet(e){
-  var ss=SpreadsheetApp.openById(e.parameter.sheetId);
-  var sh=ss.getSheetByName(e.parameter.tab);
-  if(!sh)return ContentService.createTextOutput('[]');
-  var data=sh.getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}`;
+  var cb=e.parameter.callback||'';
+  try{
+    var ss=SpreadsheetApp.openById(e.parameter.sheetId);
+    var tab=e.parameter.tab;
+    // 寫入模式
+    if(e.parameter.row){
+      var sh=ss.getSheetByName(tab);
+      if(!sh){
+        sh=ss.insertSheet(tab);
+        if(SHEETS[tab]){
+          sh.appendRow(SHEETS[tab]);
+          sh.getRange(1,1,1,SHEETS[tab].length).setBackground('#E8F0FE').setFontWeight('bold');
+          sh.setFrozenRows(1);
+        }
+      }
+      var row=JSON.parse(e.parameter.row);
+      row.push(Utilities.formatDate(new Date(),'Asia/Taipei','yyyy-MM-dd HH:mm:ss'));
+      sh.appendRow(row);
+      var r=JSON.stringify({status:'ok'});
+      return ContentService.createTextOutput(cb?cb+'('+r+')':r)
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    // 讀取模式
+    var sh2=ss.getSheetByName(tab);
+    var r2=sh2?JSON.stringify(sh2.getDataRange().getValues()):'[]';
+    return ContentService.createTextOutput(cb?cb+'('+r2+')':r2)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }catch(err){
+    var r3=JSON.stringify({status:'error',msg:err.toString()});
+    return ContentService.createTextOutput(cb?cb+'('+r3+')':r3)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+}``;
 
 function ld(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function sv(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
@@ -849,21 +899,58 @@ function saveGsConfig(){
   localStorage.setItem('gs_url',gsUrl); localStorage.setItem('gs_id',gsId);
   updateGsBadge(); closeOverlay('gs-overlay'); toast('✅ Google Sheets 設定已儲存');
 }
-async function gsAppend(tab,rowArr){
-  if(!gsUrl||!gsId) return;
-  try{
-    await fetch(gsUrl,{
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:`sheetId=${encodeURIComponent(gsId)}&tab=${encodeURIComponent(tab)}&row=${encodeURIComponent(JSON.stringify(rowArr))}`
+
+// ── JSONP 寫入：繞過 CORS，可得到真實回應 ──
+function gsAppend(tab, rowArr){
+  if(!gsUrl||!gsId) return Promise.resolve();
+  return new Promise((resolve)=>{
+    const cbName = 'gsCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const timeout = setTimeout(()=>{
+      cleanup();
+      toastErr('☁ 同步逾時，請檢查網路');
+      resolve('timeout');
+    }, 10000);
+
+    window[cbName] = function(res){
+      cleanup();
+      if(res && res.status === 'ok'){
+        toastOk('☁ 已同步到 Google Sheets');
+      } else {
+        toastErr('☁ 同步失敗：'+(res&&res.msg||'未知錯誤'));
+      }
+      resolve(res);
+    };
+
+    function cleanup(){
+      clearTimeout(timeout);
+      delete window[cbName];
+      const old = document.getElementById('gs-jsonp-script');
+      if(old) old.remove();
+    }
+
+    const params = new URLSearchParams({
+      action:   'write',
+      sheetId:  gsId,
+      tab:      tab,
+      row:      JSON.stringify(rowArr),
+      callback: cbName
     });
-  }catch(e){ console.warn('GS sync:',e); }
+    const s = document.createElement('script');
+    s.id  = 'gs-jsonp-script';
+    s.src = gsUrl + '?' + params.toString();
+    s.onerror = ()=>{
+      cleanup();
+      toastErr('☁ 無法連線，請確認部署網址');
+      resolve('error');
+    };
+    document.head.appendChild(s);
+  });
 }
+
 async function testGsSync(){
   if(!gsUrl||!gsId) return toast('請先填入連線設定');
-  toast('測試中…');
-  await gsAppend('測試',['test',new Date().toISOString()]);
-  toast('✅ 已傳送測試資料，請檢查 Google Sheets');
+  toast('同步測試中…');
+  await gsAppend('測試',['測試資料', new Date().toLocaleString('zh-TW')]);
 }
 function copyGsCode(){
   navigator.clipboard.writeText(GS_CODE).then(()=>toast('✅ 程式碼已複製'));
@@ -901,11 +988,15 @@ function switchInner(pid,el){
 }
 
 // ══ TOAST ══
-function toast(msg,ms=2400){
+function toast(msg,ms=2400,color=''){
   const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
+  el.textContent=msg;
+  el.style.background = color||'#2a2218';
+  el.classList.add('show');
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms);
 }
+function toastOk(msg){ toast(msg,2600,'#2e7d32'); }
+function toastErr(msg){ toast(msg,3500,'#c0392b'); }
 </script>
 </body>
 </html>
